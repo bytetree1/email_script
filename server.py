@@ -20,14 +20,10 @@ def home():
 @app.route("/encrypt", methods=["POST"])
 def encrypt():
     try:
+        # Read JSON
+        data = request.get_json(force=True)
 
-        data = request.get_json(silent=True)
-
-        if not data:
-            return jsonify({
-                "success": False,
-                "message": "No JSON received"
-            }), 400
+        print("Received JSON:", data)
 
         name = data.get("name")
         email = data.get("email")
@@ -40,11 +36,9 @@ def encrypt():
             }), 400
 
         filename = email.replace("@", "_").replace(".", "_") + ".pdf"
+        output_path = os.path.join(OUTPUT_FOLDER, filename)
 
-        output_path = os.path.join(
-            OUTPUT_FOLDER,
-            filename
-        )
+        print("Generating PDF...")
 
         encrypt_pdf(
             MASTER_PDF,
@@ -54,8 +48,12 @@ def encrypt():
             email
         )
 
-        with open(output_path, "rb") as f:
-            pdf_data = base64.b64encode(f.read()).decode("utf-8")
+        print("Encoding PDF...")
+
+        with open(output_path, "rb") as pdf_file:
+            pdf_data = base64.b64encode(pdf_file.read()).decode("utf-8")
+
+        print("Done!")
 
         return jsonify({
             "success": True,
@@ -68,7 +66,8 @@ def encrypt():
 
         return jsonify({
             "success": False,
-            "message": str(e)
+            "error": str(e),
+            "traceback": traceback.format_exc()
         }), 500
 
 
