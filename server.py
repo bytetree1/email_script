@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from encrypt import encrypt_pdf
 import os
 import base64
+import traceback
 
 app = Flask(__name__)
 
@@ -18,36 +19,57 @@ def home():
 
 @app.route("/encrypt", methods=["POST"])
 def encrypt():
+    try:
 
-    data = request.get_json()
+        data = request.get_json(silent=True)
 
-    name = data["name"]
-    email = data["email"]
-    password = data["password"]
+        if not data:
+            return jsonify({
+                "success": False,
+                "message": "No JSON received"
+            }), 400
 
-    filename = email.replace("@", "_").replace(".", "_") + ".pdf"
+        name = data.get("name")
+        email = data.get("email")
+        password = data.get("password")
 
-    output_path = os.path.join(
-        OUTPUT_FOLDER,
-        filename
-    )
+        if not name or not email or not password:
+            return jsonify({
+                "success": False,
+                "message": "Missing required fields"
+            }), 400
 
-    encrypt_pdf(
-        MASTER_PDF,
-        output_path,
-        password,
-        name,
-        email
-    )
+        filename = email.replace("@", "_").replace(".", "_") + ".pdf"
 
-    with open(output_path, "rb") as f:
-        pdf_data = base64.b64encode(f.read()).decode("utf-8")
+        output_path = os.path.join(
+            OUTPUT_FOLDER,
+            filename
+        )
 
-    return jsonify({
-        "success": True,
-        "filename": filename,
-        "pdf": pdf_data
-    })
+        encrypt_pdf(
+            MASTER_PDF,
+            output_path,
+            password,
+            name,
+            email
+        )
+
+        with open(output_path, "rb") as f:
+            pdf_data = base64.b64encode(f.read()).decode("utf-8")
+
+        return jsonify({
+            "success": True,
+            "filename": filename,
+            "pdf": pdf_data
+        })
+
+    except Exception as e:
+        print(traceback.format_exc())
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
 
 
 if __name__ == "__main__":
