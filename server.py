@@ -1,6 +1,7 @@
 from flask import Flask, request, send_file, jsonify
 from encrypt import encrypt_pdf
 import os
+import base64
 
 app = Flask(__name__)
 
@@ -40,10 +41,14 @@ def encrypt():
         email
     )
 
-    return send_file(
-        output_path,
-        as_attachment=True
-    )
+    with open(output_path, "rb") as f:
+    pdf_data = base64.b64encode(f.read()).decode("utf-8")
+
+return jsonify({
+    "success": True,
+    "filename": filename,
+    "pdf": pdf_data
+})
 
 
 import os
